@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import QuantitiesTab from './components/QuantitiesTab';
+import EstimateTab from './components/EstimateTab';
 
 interface ProjectDetail {
   id: string;
@@ -375,10 +376,12 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === 'estimate' && (
-            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-              <p className="text-slate-500">Estimate generation coming soon...</p>
-              <p className="text-sm text-slate-400 mt-2">We'll apply rates to quantities and generate your full estimate</p>
-            </div>
+            <EstimateTab
+              projectId={projectId}
+              lineItems={project.lineItems}
+              project={project}
+              onRefresh={fetchProject}
+            />
           )}
         </div>
       </main>
