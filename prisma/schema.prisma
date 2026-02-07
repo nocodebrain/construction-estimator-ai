@@ -1,0 +1,218 @@
+// Prisma schema for AI Construction Estimator
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User accounts (for future multi-user support)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects  Project[]
+}
+
+// Project - groups files and estimates together
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  location    String?  // Project location
+  clientName  String?
+  
+  status      ProjectStatus @default(DRAFT)
+  
+  // Estimate data
+  totalCost   Float?   // Total estimated cost
+  laborCost   Float?
+  materialCost Float?
+  markupPercent Float? @default(20) // Default 20% markup
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  files       File[]
+  quantities  Quantity[]
+  lineItems   LineItem[]
+  missingScopes MissingScope[]
+}
+
+enum ProjectStatus {
+  DRAFT
+  PROCESSING
+  READY
+  SENT
+  WON
+  LOST
+}
+
+// File - uploaded documents (drawings, specs, etc.)
+model File {
+  id          String   @id @default(cuid())
+  name        String   // Original filename
+  key         String   @unique // R2 storage key
+  url         String   // Public or presigned URL
+  size        Int      // File size in bytes
+  type        String   // MIME type
+  
+  category    FileCategory @default(OTHER)
+  
+  // Processing status
+  processed   Boolean  @default(false)
+  extractedText String? // Extracted text from OCR/parsing
+  
+  createdAt   DateTime @default(now())
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  quantities  Quantity[]
+}
+
+enum FileCategory {
+  DRAWING
+  SPECIFICATION
+  SCOPE
+  PHOTO
+  OTHER
+}
+
+// Quantity - extracted quantities from documents
+model Quantity {
+  id          String   @id @default(cuid())
+  description String   // e.g., "Internal walls - plasterboard"
+  unit        String   // e.g., "m2", "m", "each"
+  amount      Float    // Quantity amount
+  
+  category    QuantityCategory
+  
+  // AI extraction confidence (0-1)
+  confidence  Float?   @default(1.0)
+  
+  // Source location (for traceability)
+  source      String?  // e.g., "Drawing A-101, Room 3"
+  
+  verified    Boolean  @default(false) // Manual verification flag
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  fileId      String?
+  file        File?    @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  
+  lineItems   LineItem[]
+}
+
+enum QuantityCategory {
+  WALLS
+  FLOORS
+  CEILINGS
+  DOORS
+  WINDOWS
+  ELECTRICAL
+  PLUMBING
+  HVAC
+  FINISHES
+  OTHER
+}
+
+// Rate - cost rates (industry standard or learned from history)
+model Rate {
+  id          String   @id @default(cuid())
+  description String   // e.g., "Plasterboard installation"
+  unit        String   // e.g., "m2"
+  
+  laborRate   Float    // Labor cost per unit
+  materialRate Float   // Material cost per unit
+  totalRate   Float    // Total cost per unit
+  
+  category    QuantityCategory
+  
+  // Rate source
+  source      RateSource @default(INDUSTRY)
+  
+  // For learned rates
+  timesUsed   Int      @default(0)
+  lastUsed    DateTime?
+  
+  active      Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  lineItems   LineItem[]
+}
+
+enum RateSource {
+  INDUSTRY    // Industry standard rates
+  HISTORICAL  // Learned from past projects
+  CUSTOM      // Manually entered by user
+}
+
+// LineItem - estimate line item (quantity × rate)
+model LineItem {
+  id          String   @id @default(cuid())
+  description String
+  
+  quantity    Float
+  unit        String
+  
+  laborRate   Float
+  materialRate Float
+  totalRate   Float
+  
+  laborCost   Float    // quantity × laborRate
+  materialCost Float   // quantity × materialRate
+  totalCost   Float    // quantity × totalRate
+  
+  notes       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  quantityId  String?
+  quantity_data Quantity? @relation(fields: [quantityId], references: [id], onDelete: SetNull)
+  
+  rateId      String?
+  rate        Rate?    @relation(fields: [rateId], references: [id], onDelete: SetNull)
+}
+
+// MissingScope - AI-detected missing items (risk mitigation)
+model MissingScope {
+  id          String   @id @default(cuid())
+  description String
+  category    String
+  severity    ScopeSeverity
+  suggestion  String?  // Suggested action
+  
+  acknowledged Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+enum ScopeSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}

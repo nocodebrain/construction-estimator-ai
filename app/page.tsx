@@ -25,8 +25,8 @@ export default function Home() {
               <a href="#" className="text-sm text-slate-600 hover:text-slate-900">
                 Pricing
               </a>
-              <a href="/upload" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-                Try Demo
+              <a href="/projects" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                Get Started
               </a>
             </nav>
           </div>
@@ -47,8 +47,8 @@ export default function Home() {
             Catch missing scope before it costs you money.
           </p>
           <div className="flex items-center justify-center gap-4">
-            <a href="/upload" className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-lg inline-block">
-              Try Upload Demo
+            <a href="/projects" className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-lg inline-block">
+              Get Started Free
             </a>
             <button className="px-8 py-4 bg-white text-slate-900 font-semibold rounded-lg hover:bg-slate-50 border border-slate-300">
               Watch Demo
