@@ -2,27 +2,32 @@
 
 ## Quick Deploy to Railway
 
-### Option 1: GitHub Integration (Recommended)
+### GitHub Integration (Recommended)
 
-1. **Push to GitHub:**
-```bash
-# If not already done, create GitHub repo and push
-git remote add origin https://github.com/YOUR_USERNAME/construction-estimator-ai.git
-git push -u origin main
-```
+**Repository:** https://github.com/nocodebrain/construction-estimator-ai
 
-2. **Deploy on Railway:**
-- Visit https://railway.app
-- Click "New Project" → "Deploy from GitHub repo"
-- Select your `construction-estimator-ai` repo
-- Railway will auto-detect Next.js and deploy
+1. **Deploy on Railway:**
+   - Visit https://railway.app/new
+   - Click "Deploy from GitHub repo"
+   - Select `nocodebrain/construction-estimator-ai`
+   - Railway will auto-detect Next.js and deploy
 
-3. **Configure Environment Variables (optional for now):**
+2. **Build Process (Automatic):**
+   - Nixpacks detects Node.js 20
+   - Runs: `npm install`
+   - Runs: `npm run build`
+   - Starts: `npm start`
+
+3. **Get Live URL:**
+   - Railway provides: `construction-estimator-ai.up.railway.app`
+   - Or configure custom domain in settings
+
+4. **Configure Environment Variables (optional for now):**
 ```
 AI_SERVICE_URL=http://localhost:8000  # Will add later
 ```
 
-### Option 2: Railway CLI
+### Railway CLI Alternative
 
 ```bash
 # Install Railway CLI
@@ -31,22 +36,25 @@ npm install -g @railway/cli
 # Login
 railway login
 
-# Initialize project
-railway init
+# In project directory
+cd /data/.openclaw/workspace/construction-estimator-ai
 
-# Deploy
+# Initialize and deploy
+railway init
 railway up
 ```
 
-## Manual Deployment
+## Manual Deployment / Local Testing
 
 ### Build Locally
 ```bash
-cd web
+cd /data/.openclaw/workspace/construction-estimator-ai
 npm install
 npm run build
 npm start
 ```
+
+Visit: http://localhost:3000
 
 ### Production Checklist
 - [ ] Environment variables configured
