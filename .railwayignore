@@ -1,0 +1,12 @@
+# AI Service (will be deployed separately later)
+ai-service/
+
+# Development
+node_modules/
+.next/
+
+# Documentation (optional - keep or remove)
+# *.md
+
+# Git
+.git/
