@@ -1,11 +1,50 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  key: string;
+  uploadedAt: string;
+}
 
 export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+
+  // Fetch existing files on mount
+  useEffect(() => {
+    fetchUploadedFiles();
+  }, []);
+
+  const fetchUploadedFiles = async () => {
+    try {
+      const response = await fetch('/api/files');
+      const data = await response.json();
+      if (data.success) {
+        // Transform API response to match UploadedFile format
+        const transformed = data.files.map((f: any) => ({
+          id: f.key.split('/').pop()?.split('.')[0] || '',
+          name: f.name,
+          size: f.size,
+          type: 'application/pdf', // We don't store type in R2 metadata yet
+          url: `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${f.key}`,
+          key: f.key,
+          uploadedAt: f.lastModified,
+        }));
+        setUploadedFiles(transformed);
+      }
+    } catch (error) {
+      console.error('Failed to fetch files:', error);
+    }
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
@@ -25,14 +64,67 @@ export default function UploadPage() {
     if (files.length === 0) return;
     
     setUploading(true);
-    // TODO: Implement actual upload logic
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setUploading(false);
-    alert('Upload complete! (Mock - Day 2 in progress)');
+    
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          return data.file;
+        } else {
+          throw new Error(data.error || 'Upload failed');
+        }
+      });
+
+      const uploadedFileResults = await Promise.all(uploadPromises);
+      
+      // Add newly uploaded files to the list
+      setUploadedFiles(prev => [...prev, ...uploadedFileResults]);
+      
+      // Clear pending files
+      setFiles([]);
+      
+      alert(`✅ Successfully uploaded ${uploadedFileResults.length} file(s)!`);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('❌ Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const deleteUploadedFile = async (key: string) => {
+    if (!confirm('Are you sure you want to delete this file?')) return;
+
+    try {
+      const response = await fetch(`/api/files/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setUploadedFiles(prev => prev.filter(f => f.key !== key));
+        alert('✅ File deleted successfully');
+      } else {
+        throw new Error(data.error || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('❌ Failed to delete file');
+    }
   };
 
   return (
@@ -97,11 +189,11 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* File List */}
+          {/* Pending Files (to be uploaded) */}
           {files.length > 0 && (
             <div className="mt-8">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                Uploaded Files ({files.length})
+                Ready to Upload ({files.length})
               </h3>
               <div className="space-y-3">
                 {files.map((file, index) => (
@@ -138,8 +230,53 @@ export default function UploadPage() {
                 disabled={uploading}
                 className="mt-6 w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {uploading ? 'Uploading...' : 'Upload & Process'}
+                {uploading ? 'Uploading...' : `Upload ${files.length} File${files.length > 1 ? 's' : ''}`}
               </button>
+            </div>
+          )}
+
+          {/* Uploaded Files (stored in R2) */}
+          {uploadedFiles.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Uploaded Files ({uploadedFiles.length})
+              </h3>
+              <div className="space-y-3">
+                {uploadedFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded flex items-center justify-center">
+                        <span className="text-xl">✅</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900">{file.name}</p>
+                        <p className="text-sm text-slate-500">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB · Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        View
+                      </a>
+                      <button
+                        onClick={() => deleteUploadedFile(file.key)}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
