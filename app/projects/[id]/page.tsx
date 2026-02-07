@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
+import QuantitiesTab from './components/QuantitiesTab';
 
 interface ProjectDetail {
   id: string;
@@ -96,6 +97,49 @@ export default function ProjectDetailPage() {
 
   const removePendingFile = (index: number) => {
     setPendingFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const processFile = async (fileId: string) => {
+    try {
+      const response = await fetch(`/api/files/${fileId}/process`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✅ Processed! Found ${data.stats.quantitiesFound} quantities`);
+        fetchProject(); // Refresh to show new quantities
+      } else {
+        alert(`❌ Processing failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Process error:', error);
+      alert('❌ Processing failed');
+    }
+  };
+
+  const processAllFiles = async () => {
+    if (!project?.files || project.files.length === 0) {
+      alert('No files to process');
+      return;
+    }
+
+    const pdfFiles = project.files.filter(f => f.type === 'application/pdf');
+    
+    if (pdfFiles.length === 0) {
+      alert('No PDF files to process');
+      return;
+    }
+
+    if (!confirm(`Process ${pdfFiles.length} PDF file(s)?`)) return;
+
+    for (const file of pdfFiles) {
+      await processFile(file.id);
+    }
+
+    alert(`✅ Processed ${pdfFiles.length} file(s)`);
+    fetchProject();
   };
 
   const getStatusColor = (status: string) => {
@@ -264,9 +308,17 @@ export default function ProjectDetailPage() {
               {/* Uploaded Files */}
               {project.files.length > 0 ? (
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                    Uploaded Files ({project.files.length})
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      Uploaded Files ({project.files.length})
+                    </h3>
+                    <button
+                      onClick={processAllFiles}
+                      className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700"
+                    >
+                      🤖 Process All PDFs
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {project.files.map((file) => (
                       <div key={file.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg">
@@ -281,14 +333,27 @@ export default function ProjectDetailPage() {
                             </p>
                           </div>
                         </div>
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                        >
-                          View
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            View
+                          </a>
+                          {file.type === 'application/pdf' && !file.processed && (
+                            <button
+                              onClick={() => processFile(file.id)}
+                              className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded hover:bg-green-200"
+                            >
+                              Process
+                            </button>
+                          )}
+                          {file.processed && (
+                            <span className="text-green-600 text-sm">✓ Processed</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -302,10 +367,11 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === 'quantities' && (
-            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-              <p className="text-slate-500">AI Quantity Takeoff coming soon...</p>
-              <p className="text-sm text-slate-400 mt-2">We'll extract quantities from your uploaded drawings automatically</p>
-            </div>
+            <QuantitiesTab
+              projectId={projectId}
+              quantities={project.quantities}
+              onRefresh={fetchProject}
+            />
           )}
 
           {activeTab === 'estimate' && (
