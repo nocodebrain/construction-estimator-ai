@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic';
 // Create new project
 export async function POST(request: NextRequest) {
   try {
+    const prisma = getPrisma();
+
     const body = await request.json();
     const { name, description, location, clientName } = body;
 
@@ -47,6 +49,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Create project error:', error);
+    
+    if ((error as Error).message?.includes('Database not configured')) {
+      return NextResponse.json(
+        { error: 'Database not configured. Please add DATABASE_URL to Railway environment variables.' },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to create project' },
       { status: 500 }
@@ -57,6 +67,8 @@ export async function POST(request: NextRequest) {
 // List all projects
 export async function GET(request: NextRequest) {
   try {
+    const prisma = getPrisma();
+
     // TODO: Filter by userId from session
     const userId = 'demo-user';
 
@@ -91,6 +103,14 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('List projects error:', error);
+
+    if ((error as Error).message?.includes('Database not configured')) {
+      return NextResponse.json(
+        { error: 'Database not configured. Please add DATABASE_URL to Railway environment variables.' },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to list projects' },
       { status: 500 }

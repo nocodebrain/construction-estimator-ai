@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const quantity = await prisma.quantity.update({
+    const quantity = await getPrisma().quantity.update({
       where: { id },
       data: body,
     });
@@ -39,7 +39,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    await prisma.quantity.delete({
+    await getPrisma().quantity.delete({
       where: { id },
     });
 

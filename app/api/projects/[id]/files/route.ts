@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { uploadToR2 } from '@/lib/r2';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -26,7 +26,7 @@ export async function POST(
     const { id: projectId } = await params;
 
     // Verify project exists
-    const project = await prisma.project.findUnique({
+    const project = await getPrisma().project.findUnique({
       where: { id: projectId },
     });
 
@@ -76,7 +76,7 @@ export async function POST(
     const url = await uploadToR2(key, buffer, file.type);
 
     // Save file metadata to database
-    const fileRecord = await prisma.file.create({
+    const fileRecord = await getPrisma().file.create({
       data: {
         name: file.name,
         key,
@@ -90,7 +90,7 @@ export async function POST(
 
     // Update project status to PROCESSING if it was DRAFT
     if (project.status === 'DRAFT') {
-      await prisma.project.update({
+      await getPrisma().project.update({
         where: { id: projectId },
         data: { status: 'PROCESSING' },
       });

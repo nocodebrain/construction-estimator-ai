@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { getR2PresignedUrl } from '@/lib/r2';
 import { extractPDFText, extractQuantitiesFromText, categorizeQuantity } from '@/lib/pdf';
 
@@ -18,7 +18,7 @@ export async function POST(
     const { id: fileId } = await params;
 
     // Get file from database
-    const file = await prisma.file.findUnique({
+    const file = await getPrisma().file.findUnique({
       where: { id: fileId },
       include: { project: true },
     });
@@ -56,7 +56,7 @@ export async function POST(
     const detectedQuantities = extractQuantitiesFromText(extractedText);
 
     // Save extracted text to file record
-    await prisma.file.update({
+    await getPrisma().file.update({
       where: { id: fileId },
       data: {
         processed: true,
@@ -67,7 +67,7 @@ export async function POST(
     // Save detected quantities to database
     const createdQuantities = await Promise.all(
       detectedQuantities.map(q =>
-        prisma.quantity.create({
+        getPrisma().quantity.create({
           data: {
             description: q.description.substring(0, 255), // Limit length
             unit: q.unit,
@@ -85,7 +85,7 @@ export async function POST(
 
     // Update project status to READY if it was PROCESSING
     if (file.project.status === 'PROCESSING') {
-      await prisma.project.update({
+      await getPrisma().project.update({
         where: { id: file.projectId },
         data: { status: 'READY' },
       });

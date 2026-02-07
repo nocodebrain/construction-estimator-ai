@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { id: projectId } = await params;
 
-    const quantities = await prisma.quantity.findMany({
+    const quantities = await getPrisma().quantity.findMany({
       where: { projectId },
       include: {
         file: {
@@ -56,7 +56,7 @@ export async function POST(
       );
     }
 
-    const quantity = await prisma.quantity.create({
+    const quantity = await getPrisma().quantity.create({
       data: {
         description,
         unit,
