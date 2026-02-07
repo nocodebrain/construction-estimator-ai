@@ -25,9 +25,9 @@ export default function Home() {
               <a href="#" className="text-sm text-slate-600 hover:text-slate-900">
                 Pricing
               </a>
-              <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-                Sign Up
-              </button>
+              <a href="/upload" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                Try Demo
+              </a>
             </nav>
           </div>
         </div>
@@ -47,9 +47,9 @@ export default function Home() {
             Catch missing scope before it costs you money.
           </p>
           <div className="flex items-center justify-center gap-4">
-            <button className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-lg">
-              Start Free Trial
-            </button>
+            <a href="/upload" className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-lg inline-block">
+              Try Upload Demo
+            </a>
             <button className="px-8 py-4 bg-white text-slate-900 font-semibold rounded-lg hover:bg-slate-50 border border-slate-300">
               Watch Demo
             </button>
@@ -137,7 +137,7 @@ export default function Home() {
           <div className="text-center text-sm text-slate-500">
             <p>© 2026 AI Construction Estimator. Built for Australian construction.</p>
             <p className="mt-2">
-              <span className="font-semibold">Status:</span> Day 1 - Foundation Setup ✅
+              <span className="font-semibold">Status:</span> Day 2 - Upload Functionality 🚧
             </p>
           </div>
         </div>
